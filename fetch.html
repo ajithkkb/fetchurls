@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp-Style Link Preview</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f0f2f5; }
+        .input-container { margin-bottom: 20px; }
+        input { padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; border: none; background-color: #00a884; color: white; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #008f72; }
+        
+        /* Preview Card Styling */
+        .preview-card { display: flex; max-width: 500px; border: 1px solid #e9edef; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-decoration: none; color: #000; display: none; }
+        .preview-image { width: 150px; height: 150px; object-fit: cover; background: #e9edef; flex-shrink: 0; }
+        .preview-content { padding: 12px; display: flex; flex-direction: column; justify-content: center; }
+        .preview-title { font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #111b21; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .preview-desc { font-size: 13px; color: #667781; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .preview-domain { font-size: 11px; color: #8696a0; text-transform: lowercase; margin-top: auto; }
+        .loading { display: none; font-size: 14px; color: #667781; }
+    </style>
+</head>
+<body>
+
+    <div class="input-container">
+        <input type="text" id="urlInput" placeholder="Paste website URL here (e.g., https://github.com)">
+        <button onclick="generatePreview()">Generate Preview</button>
+    </div>
+
+    <div id="loading" class="loading">Fetching preview data...</div>
+
+    <!-- The Preview Card Anchor Tag -->
+    <a id="previewCard" class="preview-card" href="#" target="_blank">
+        <img id="previewImg" class="preview-image" src="" alt="Thumbnail">
+        <div class="preview-content">
+            <div id="previewTitle" class="preview-title"></div>
+            <div id="previewDesc" class="preview-desc"></div>
+            <div id="previewDomain" class="preview-domain"></div>
+        </div>
+    </a>
+
+    <script>
+        async function generatePreview() {
+            const urlInput = document.getElementById('urlInput').value.trim();
+            const loading = document.getElementById('loading');
+            const card = document.getElementById('previewCard');
+            
+            if (!urlInput) return alert('Please enter a valid URL');
+
+            // Show loading, hide card
+            loading.style.display = 'block';
+            card.style.display = 'none';
+
+            try {
+                // Use a free CORS proxy to fetch the target site's HTML content
+                const proxyUrl = `https://allorigins.win{encodeURIComponent(urlInput)}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                if (!data.contents) throw new Error('Could not fetch page contents.');
+
+                // Parse the raw HTML text string into a readable DOM object
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+
+                // Helper function to extract content from meta tags
+                const getMetaValue = (property) => {
+                    const element = doc.querySelector(`meta[property="${property}"], meta[name="${property}"]`);
+                    return element ? element.getAttribute('content') : null;
+                };
+
+                // Extract Open Graph Data (Fallback to standard tags if missing)
+                const title = getMetaValue('og:title') || doc.querySelector('title')?.innerText || 'No Title Available';
+                const description = getMetaValue('og:description') || getMetaValue('description') || 'No description provided.';
+                let imageUrl = getMetaValue('og:image') || doc.querySelector('img')?.src || '';
+
+                // Handle relative image paths to make them absolute URLs
+                if (imageUrl && !imageUrl.startsWith('http')) {
+                    const parsedUrl = new URL(urlInput);
+                    imageUrl = parsedUrl.origin + (imageUrl.startsWith('/') ? '' : '/') + imageUrl;
+                }
+
+                // Populate and display the HTML preview card
+                document.getElementById('previewTitle').innerText = title;
+                document.getElementById('previewDesc').innerText = description;
+                document.getElementById('previewDomain').innerText = new URL(urlInput).hostname;
+                card.href = urlInput;
+
+                const imgElement = document.getElementById('previewImg');
+                if (imageUrl) {
+                    imgElement.src = imageUrl;
+                    imgElement.style.display = 'block';
+                } else {
+                    imgElement.style.display = 'none'; // Hide if no image found
+                }
+
+                card.style.display = 'flex';
+            } catch (error) {
+                console.error('Error fetching preview:', error);
+                alert('Failed to generate link preview. The website may be blocking access.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -52,11 +52,7 @@
             loading.style.display = 'block';
             card.style.display = 'none';
 
-            try {
-                // Use a free CORS proxy to fetch the target site's HTML content
-                //const proxyUrl = `https://allorigins.win{encodeURIComponent(urlInput)}`;
-                //const response = await fetch(proxyUrl);
-                
+            try {              
                 const liveBackendUrl = `https://fetchurls.vercel.app{encodeURIComponent(urlInput)}`;
                 const response = await fetch(liveBackendUrl);
                 if (!response.ok) throw new Error('Server error');

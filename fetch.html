@@ -54,8 +54,12 @@
 
             try {
                 // Use a free CORS proxy to fetch the target site's HTML content
-                const proxyUrl = `https://allorigins.win{encodeURIComponent(urlInput)}`;
-                const response = await fetch(proxyUrl);
+                //const proxyUrl = `https://allorigins.win{encodeURIComponent(urlInput)}`;
+                //const response = await fetch(proxyUrl);
+                
+                const liveBackendUrl = `https://fetchurls.vercel.app{encodeURIComponent(urlInput)}`;
+                const response = await fetch(liveBackendUrl);
+                if (!response.ok) throw new Error('Server error');
                 const data = await response.json();
                 
                 if (!data.contents) throw new Error('Could not fetch page contents.');

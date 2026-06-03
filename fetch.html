@@ -53,28 +53,38 @@
             card.style.display = 'none';
 
             try {              
-                const liveBackendUrl = `https://fetchurls.vercel.app{encodeURIComponent(urlInput)}`;
-                const response = await fetch(liveBackendUrl);
+                const encodedValue = encodeURIComponent(urlInput);    
+                const liveBackendUrl = `https://fetchurls.vercel.app/api/preview?url=${encodedValue}`;
+                //loading.innerText = encodedValue; // Display the backend URL for debugging purposes   
+                console.log(liveBackendUrl);
+                const response = await fetch(liveBackendUrl);   
                 if (!response.ok) throw new Error('Server error');
                 const data = await response.json();
                 
-                if (!data.contents) throw new Error('Could not fetch page contents.');
+                if (!data) throw new Error('Could not fetch page contents.');
+/*
+                if(data.contents) {
+                    // Parse the raw HTML text string into a readable DOM object
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data.contents, 'text/html');
 
-                // Parse the raw HTML text string into a readable DOM object
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/html');
+                    // Helper function to extract content from meta tags
+                    const getMetaValue = (property) => {
+                        const element = doc.querySelector(`meta[property="${property}"], meta[name="${property}"]`);
+                        return element ? element.getAttribute('content') : null;
+                    };
 
-                // Helper function to extract content from meta tags
-                const getMetaValue = (property) => {
-                    const element = doc.querySelector(`meta[property="${property}"], meta[name="${property}"]`);
-                    return element ? element.getAttribute('content') : null;
-                };
-
-                // Extract Open Graph Data (Fallback to standard tags if missing)
-                const title = getMetaValue('og:title') || doc.querySelector('title')?.innerText || 'No Title Available';
-                const description = getMetaValue('og:description') || getMetaValue('description') || 'No description provided.';
-                let imageUrl = getMetaValue('og:image') || doc.querySelector('img')?.src || '';
-
+                    // Extract Open Graph Data (Fallback to standard tags if missing)
+                    const title = getMetaValue('og:title') || doc.querySelector('title')?.innerText || 'No Title Available';
+                    const description = getMetaValue('og:description') || getMetaValue('description') || 'No description provided.';
+                    let imageUrl = getMetaValue('og:image') || doc.querySelector('img')?.src || '';
+                }
+                else {} */
+                    // If the backend already provides parsed contents, use them directly
+                    const title = data.title || 'No Title Available';
+                    const description = data.description || 'No description provided.';
+                    let imageUrl = data.image || '';
+                
                 // Handle relative image paths to make them absolute URLs
                 if (imageUrl && !imageUrl.startsWith('http')) {
                     const parsedUrl = new URL(urlInput);
